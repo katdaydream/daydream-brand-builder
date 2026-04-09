@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daydream Brand Builder</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#fdf2f8', 100: '#fce7f3', 200: '#fbcfe8', 300: '#f9a8d4', 400: '#f472b6', 500: '#ec4899' },
+            dd: { teal: '#0379A0', cyan: '#31A9BF', lime: '#BFC954', gold: '#E9D44E', pink: '#F097B7', blush: '#FFF4F0' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Raleway:wght@300;400;500;600&family=Great+Vibes&family=Dancing+Script:wght@400;700&family=Parisienne&family=Sacramento&family=Alex+Brush&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400&family=Poppins:wght@300;400;500;600;700&family=Oxygen:wght@300;400;700&family=Josefin+Sans:wght@300;400;600;700&family=Quicksand:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Montserrat', sans-serif; }
+    .font-great-vibes { font-family: 'Great Vibes', cursive; }
+    .font-dancing { font-family: 'Dancing Script', cursive; }
+    .font-parisienne { font-family: 'Parisienne', cursive; }
+    .font-sacramento { font-family: 'Sacramento', cursive; }
+    .font-alex-brush { font-family: 'Alex Brush', cursive; }
+    .font-playfair { font-family: 'Playfair Display', serif; }
+    .font-cormorant { font-family: 'Cormorant Garamond', serif; }
+    .font-libre { font-family: 'Libre Baskerville', serif; }
+    .font-lora { font-family: 'Lora', serif; }
+    .font-montserrat { font-family: 'Montserrat', sans-serif; }
+    .font-raleway { font-family: 'Raleway', sans-serif; }
+    .font-poppins { font-family: 'Poppins', sans-serif; }
+    .font-oxygen { font-family: 'Oxygen', sans-serif; }
+    .font-josefin { font-family: 'Josefin Sans', sans-serif; }
+    .font-quicksand { font-family: 'Quicksand', sans-serif; }
+
+    .color-swatch { transition: transform 0.2s, box-shadow 0.2s; }
+    .color-swatch:hover { transform: scale(1.1); box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+    .color-swatch.selected { transform: scale(1.15); box-shadow: 0 0 0 3px white, 0 0 0 5px #ec4899; }
+
+    .step-indicator { transition: all 0.3s; }
+    .step-active { background: linear-gradient(135deg, #ec4899, #f472b6); color: white; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-in { animation: fadeIn 0.4s ease-out; }
+
+    .brand-board-export {
+      background: white;
+      aspect-ratio: 8.5/11;
+    }
+
+    @media print {
+      body * { visibility: hidden; }
+      .brand-board-export, .brand-board-export * { visibility: visible; }
+      .brand-board-export { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // ==================== DATA ====================
+
+    const INDUSTRIES = [
+      { id: 'balloons', label: 'Balloon Artist / Decor', icon: '🎈' },
+      { id: 'events', label: 'Event Planner', icon: '🎉' },
+      { id: 'florals', label: 'Florist / Floral Design', icon: '🌸' },
+      { id: 'wedding', label: 'Wedding Planner', icon: '💍' },
+      { id: 'bakery', label: 'Bakery / Cakes', icon: '🎂' },
+      { id: 'photography', label: 'Photographer', icon: '📸' },
+      { id: 'beauty', label: 'Beauty / Aesthetics', icon: '✨' },
+      { id: 'other', label: 'Other Creative Biz', icon: '🎨' },
+    ];
+
+    const VIBES = [
+      { id: 'elegant', label: 'Elegant & Refined', desc: 'Timeless, sophisticated, classic' },
+      { id: 'playful', label: 'Fun & Playful', desc: 'Bright, energetic, joyful' },
+      { id: 'boho', label: 'Boho & Organic', desc: 'Natural, earthy, free-spirited' },
+      { id: 'modern', label: 'Modern & Minimal', desc: 'Clean, sleek, contemporary' },
+      { id: 'luxe', label: 'Luxe & Glamorous', desc: 'Rich, opulent, high-end' },
+      { id: 'whimsical', label: 'Whimsical & Dreamy', desc: 'Soft, romantic, fairytale' },
+    ];
+
+    const PALETTES = {
+      elegant: [
+        { name: 'Champagne Toast', colors: ['#2C2C2C', '#8B7355', '#D4AF37', '#F5E6CC', '#FFFFFF', '#F8F4EF'] },
+        { name: 'Midnight Garden', colors: ['#1B2631', '#2E4053', '#85929E', '#D5D8DC', '#F2E6D9', '#FDFEFE'] },
+        { name: 'Rose Gold', colors: ['#3D2B1F', '#B76E79', '#E8C4B8', '#F5E1DA', '#FFF0EB', '#FFFFFF'] },
+      ],
+      playful: [
+        { name: 'Party Pop', colors: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#FF8A5C', '#F2F2F2', '#FFFFFF'] },
+        { name: 'Cotton Candy', colors: ['#FF69B4', '#87CEEB', '#DDA0DD', '#98FB98', '#FFB6C1', '#FFF8F0'] },
+        { name: 'Confetti', colors: ['#E84393', '#0984E3', '#FDCB6E', '#00B894', '#FD79A8', '#FFFFFF'] },
+      ],
+      boho: [
+        { name: 'Desert Bloom', colors: ['#5D4E37', '#C19A6B', '#DEB887', '#E8D5B7', '#F5EFE6', '#FFFFFF'] },
+        { name: 'Terracotta Garden', colors: ['#8B4513', '#CD853F', '#DAA06D', '#C4A882', '#E8DDD3', '#FAF5F0'] },
+        { name: 'Sage & Clay', colors: ['#6B7B5E', '#8FBC8F', '#D2B48C', '#C19A6B', '#EDE8E0', '#FFFFFF'] },
+      ],
+      modern: [
+        { name: 'Monochrome', colors: ['#111111', '#333333', '#666666', '#999999', '#E5E5E5', '#FFFFFF'] },
+        { name: 'Nordic Frost', colors: ['#2C3E50', '#5DADE2', '#AED6F1', '#D6EAF8', '#EBF5FB', '#FFFFFF'] },
+        { name: 'Blush Modern', colors: ['#2D2D2D', '#E8B4B8', '#EDD1D1', '#F5E6E8', '#FAF0F0', '#FFFFFF'] },
+      ],
+      luxe: [
+        { name: 'Black Tie', colors: ['#0D0D0D', '#1A1A2E', '#C9A96E', '#E8D5A3', '#F5EFE0', '#FFFFFF'] },
+        { name: 'Velvet Rose', colors: ['#4A0E2E', '#8B2252', '#C9668E', '#E8A4BE', '#F5D5E0', '#FFF5F8'] },
+        { name: 'Emerald Palace', colors: ['#0B3D2E', '#1A6B4A', '#2E8B57', '#7DCEA0', '#D5F5E3', '#F0FFF0'] },
+      ],
+      whimsical: [
+        { name: 'Fairy Garden', colors: ['#9B59B6', '#A8D8EA', '#AA96DA', '#FCBAD3', '#FFE5EC', '#FFFEF7'] },
+        { name: 'Sunset Dreams', colors: ['#E17055', '#FAB1A0', '#FDCB6E', '#FFEAA7', '#DFE6E9', '#FFFFFF'] },
+        { name: 'Fancy Fete', colors: ['#8DAA6E', '#96B3D8', '#C4A8D4', '#E88BA4', '#F5C6D0', '#F5E0A0'] },
+      ],
+    };
+
+    const FONT_PAIRINGS = [
+      { id: 1, script: 'Great Vibes', scriptClass: 'font-great-vibes', clean: 'Montserrat', cleanClass: 'font-montserrat', vibe: 'Elegant script with modern sans' },
+      { id: 2, script: 'Dancing Script', scriptClass: 'font-dancing', clean: 'Raleway', cleanClass: 'font-raleway', vibe: 'Playful script with airy sans' },
+      { id: 3, script: 'Parisienne', scriptClass: 'font-parisienne', clean: 'Poppins', cleanClass: 'font-poppins', vibe: 'French-chic script with friendly sans' },
+      { id: 4, script: 'Sacramento', scriptClass: 'font-sacramento', clean: 'Josefin Sans', cleanClass: 'font-josefin', vibe: 'Flowing script with geometric sans' },
+      { id: 5, script: 'Alex Brush', scriptClass: 'font-alex-brush', clean: 'Oxygen', cleanClass: 'font-oxygen', vibe: 'Classic calligraphy with clean sans' },
+      { id: 6, script: 'Great Vibes', scriptClass: 'font-great-vibes', clean: 'Playfair Display', cleanClass: 'font-playfair', vibe: 'Elegant script with bold serif' },
+      { id: 7, script: 'Dancing Script', scriptClass: 'font-dancing', clean: 'Cormorant Garamond', cleanClass: 'font-cormorant', vibe: 'Playful script with refined serif' },
+      { id: 8, script: 'Parisienne', scriptClass: 'font-parisienne', clean: 'Libre Baskerville', cleanClass: 'font-libre', vibe: 'Romantic script with classic serif' },
+      { id: 9, script: 'Sacramento', scriptClass: 'font-sacramento', clean: 'Lora', cleanClass: 'font-lora', vibe: 'Flowing script with warm serif' },
+      { id: 10, script: 'Alex Brush', scriptClass: 'font-alex-brush', clean: 'Quicksand', cleanClass: 'font-quicksand', vibe: 'Calligraphy with rounded sans' },
+    ];
+
+    const LOGO_LAYOUTS = ['stacked', 'horizontal', 'monogram'];
+
+    // ==================== COMPONENTS ====================
+
+    function StepIndicator({ steps, current }) {
+      return (
+        <div className="flex items-center justify-center gap-2 mb-8">
+          {steps.map((step, i) => (
+            <React.Fragment key={i}>
+              <div className={`step-indicator w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold
+                ${i === current ? 'step-active' : i < current ? 'bg-pink-200 text-pink-700' : 'bg-gray-200 text-gray-400'}`}>
+                {i < current ? '✓' : i + 1}
+              </div>
+              {i < steps.length - 1 && (
+                <div className={`w-12 h-0.5 ${i < current ? 'bg-pink-300' : 'bg-gray-200'}`} />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      );
+    }
+
+    // Step 1: Client Intake
+    function IntakeStep({ data, onChange, onNext }) {
+      const [errors, setErrors] = useState({});
+
+      const validate = () => {
+        const e = {};
+        if (!data.businessName?.trim()) e.businessName = 'Business name is required';
+        if (!data.industry) e.industry = 'Pick an industry';
+        if (!data.vibe) e.vibe = 'Pick a vibe';
+        setErrors(e);
+        return Object.keys(e).length === 0;
+      };
+
+      return (
+        <div className="animate-in max-w-2xl mx-auto">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-1">Tell me about the brand</h2>
+          <p className="text-gray-500 mb-8">Let's start with the basics about your client's business.</p>
+
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Business Name *</label>
+              <input
+                type="text"
+                value={data.businessName || ''}
+                onChange={e => onChange({ ...data, businessName: e.target.value })}
+                placeholder="e.g. Fancy Fete Event Florals"
+                className={`w-full px-4 py-3 rounded-xl border ${errors.businessName ? 'border-red-300' : 'border-gray-200'} focus:border-pink-400 focus:ring-2 focus:ring-pink-100 outline-none transition`}
+              />
+              {errors.businessName && <p className="text-red-400 text-sm mt-1">{errors.businessName}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tagline (optional)</label>
+              <input
+                type="text"
+                value={data.tagline || ''}
+                onChange={e => onChange({ ...data, tagline: e.target.value })}
+                placeholder="e.g. Making every moment bloom"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-pink-400 focus:ring-2 focus:ring-pink-100 outline-none transition"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Industry *</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {INDUSTRIES.map(ind => (
+                  <button
+                    key={ind.id}
+                    onClick={() => onChange({ ...data, industry: ind.id })}
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
+                      data.industry === ind.id
+                        ? 'border-pink-400 bg-pink-50 shadow-sm'
+                        : 'border-gray-100 hover:border-pink-200 bg-white'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">{ind.icon}</div>
+                    <div className="text-xs font-medium text-gray-700">{ind.label}</div>
+                  </button>
+                ))}
+              </div>
+              {errors.industry && <p className="text-red-400 text-sm mt-1">{errors.industry}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Brand Vibe *</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {VIBES.map(v => (
+                  <button
+                    key={v.id}
+                    onClick={() => onChange({ ...data, vibe: v.id })}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      data.vibe === v.id
+                        ? 'border-pink-400 bg-pink-50 shadow-sm'
+                        : 'border-gray-100 hover:border-pink-200 bg-white'
+                    }`}
+                  >
+                    <div className="text-sm font-semibold text-gray-800">{v.label}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{v.desc}</div>
+                  </button>
+                ))}
+              </div>
+              {errors.vibe && <p className="text-red-400 text-sm mt-1">{errors.vibe}</p>}
+            </div>
+          </div>
+
+          <div className="mt-8 flex justify-end">
+            <button
+              onClick={() => validate() && onNext()}
+              className="px-8 py-3 bg-gradient-to-r from-pink-500 to-pink-400 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+            >
+              Next: Colors →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 2: Color Palette
+    function PaletteStep({ data, onChange, onNext, onBack }) {
+      const vibePalettes = PALETTES[data.vibe] || PALETTES.elegant;
+      const [customMode, setCustomMode] = useState(false);
+      const [customColor, setCustomColor] = useState('#ec4899');
+
+      const selectPalette = (palette) => {
+        onChange({ ...data, palette: { ...palette } });
+      };
+
+      const updateColor = (index, color) => {
+        const newColors = [...(data.palette?.colors || [])];
+        newColors[index] = color;
+        onChange({ ...data, palette: { ...data.palette, colors: newColors, name: data.palette?.name || 'Custom' } });
+      };
+
+      return (
+        <div className="animate-in max-w-3xl mx-auto">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-1">Choose a color palette</h2>
+          <p className="text-gray-500 mb-8">These palettes match the <span className="font-medium text-pink-500">{VIBES.find(v => v.id === data.vibe)?.label}</span> vibe. Pick one and customize it.</p>
+
+          <div className="space-y-4 mb-8">
+            {vibePalettes.map((palette, pi) => (
+              <button
+                key={pi}
+                onClick={() => selectPalette(palette)}
+                className={`w-full p-4 rounded-xl border-2 flex items-center gap-4 transition-all ${
+                  data.palette?.name === palette.name
+                    ? 'border-pink-400 bg-pink-50 shadow-sm'
+                    : 'border-gray-100 hover:border-pink-200 bg-white'
+                }`}
+              >
+                <div className="flex gap-1.5">
+                  {palette.colors.map((c, ci) => (
+                    <div key={ci} className="w-10 h-10 rounded-full border border-gray-100" style={{ backgroundColor: c }} />
+                  ))}
+                </div>
+                <div className="text-left">
+                  <div className="font-medium text-gray-800">{palette.name}</div>
+                  <div className="text-xs text-gray-400">{palette.colors.join(' / ')}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {data.palette && (
+            <div className="bg-white rounded-xl border border-gray-100 p-6 mb-8">
+              <h3 className="text-sm font-semibold text-gray-700 mb-4">Customize Your Palette</h3>
+              <div className="flex items-center gap-4 flex-wrap">
+                {data.palette.colors.map((c, i) => (
+                  <div key={i} className="flex flex-col items-center gap-2">
+                    <label className="relative cursor-pointer group">
+                      <div
+                        className="w-14 h-14 rounded-full border-2 border-gray-200 group-hover:border-pink-300 transition-all shadow-sm"
+                        style={{ backgroundColor: c }}
+                      />
+                      <input
+                        type="color"
+                        value={c}
+                        onChange={e => updateColor(i, e.target.value)}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                    </label>
+                    <span className="text-[10px] font-mono text-gray-400 uppercase">{c}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-between">
+            <button onClick={onBack} className="px-6 py-3 text-gray-500 font-medium hover:text-gray-700 transition">← Back</button>
+            <button
+              onClick={() => data.palette && onNext()}
+              disabled={!data.palette}
+              className={`px-8 py-3 font-semibold rounded-xl transition-all ${
+                data.palette
+                  ? 'bg-gradient-to-r from-pink-500 to-pink-400 text-white hover:shadow-lg'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              Next: Fonts →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 3: Font Pairing
+    function FontStep({ data, onChange, onNext, onBack }) {
+      return (
+        <div className="animate-in max-w-3xl mx-auto">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-1">Pick a font pairing</h2>
+          <p className="text-gray-500 mb-8">Script font for the fun part, clean font for the business name. Click to preview with your brand name.</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            {FONT_PAIRINGS.map(fp => {
+              const isSelected = data.fontPairing?.id === fp.id;
+              const primaryColor = data.palette?.colors?.[0] || '#333';
+              const accentColor = data.palette?.colors?.[1] || '#666';
+
+              return (
+                <button
+                  key={fp.id}
+                  onClick={() => onChange({ ...data, fontPairing: fp })}
+                  className={`p-6 rounded-xl border-2 text-left transition-all ${
+                    isSelected
+                      ? 'border-pink-400 bg-pink-50 shadow-sm'
+                      : 'border-gray-100 hover:border-pink-200 bg-white'
+                  }`}
+                >
+                  <div className="mb-3">
+                    {data.tagline ? (
+                      <span className={`${fp.scriptClass} text-2xl`} style={{ color: accentColor }}>{data.tagline}</span>
+                    ) : (
+                      <span className={`${fp.scriptClass} text-2xl`} style={{ color: accentColor }}>let's</span>
+                    )}
+                    <div className={`${fp.cleanClass} text-xl font-bold tracking-wider uppercase`} style={{ color: primaryColor }}>
+                      {data.businessName || 'Brand Name'}
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-gray-400 font-medium">
+                    {fp.script} + {fp.clean}
+                  </div>
+                  <div className="text-[10px] text-gray-300 mt-0.5">{fp.vibe}</div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex justify-between">
+            <button onClick={onBack} className="px-6 py-3 text-gray-500 font-medium hover:text-gray-700 transition">← Back</button>
+            <button
+              onClick={() => data.fontPairing && onNext()}
+              disabled={!data.fontPairing}
+              className={`px-8 py-3 font-semibold rounded-xl transition-all ${
+                data.fontPairing
+                  ? 'bg-gradient-to-r from-pink-500 to-pink-400 text-white hover:shadow-lg'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              Next: Logo →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 4: Logo Composer
+    function LogoStep({ data, onChange, onNext, onBack }) {
+      const [activeLayout, setActiveLayout] = useState('stacked');
+      const fp = data.fontPairing;
+      const colors = data.palette?.colors || ['#333', '#666', '#999', '#ccc', '#eee', '#fff'];
+      const name = data.businessName || 'Brand Name';
+      const tagline = data.tagline || '';
+
+      // Split business name for monogram
+      const words = name.trim().split(/\s+/);
+      const initials = words.map(w => w[0]).join('').substring(0, 2).toLowerCase();
+
+      const selectLayout = (layout) => {
+        setActiveLayout(layout);
+        onChange({ ...data, logoLayout: layout });
+      };
+
+      const LogoPreview = ({ layout, size = 'large' }) => {
+        const isLarge = size === 'large';
+
+        if (layout === 'stacked') {
+          return (
+            <div className="flex flex-col items-center text-center">
+              {tagline && (
+                <div className={`${fp?.scriptClass} ${isLarge ? 'text-3xl' : 'text-lg'}`} style={{ color: colors[1] }}>
+                  {tagline}
+                </div>
+              )}
+              <div className={`${fp?.cleanClass} ${isLarge ? 'text-2xl' : 'text-sm'} font-bold tracking-[0.2em] uppercase`} style={{ color: colors[0] }}>
+                {name}
+              </div>
+            </div>
+          );
+        }
+
+        if (layout === 'horizontal') {
+          return (
+            <div className="flex items-baseline gap-2">
+              {tagline && (
+                <span className={`${fp?.scriptClass} ${isLarge ? 'text-2xl' : 'text-base'}`} style={{ color: colors[1] }}>
+                  {tagline}
+                </span>
+              )}
+              <span className={`${fp?.cleanClass} ${isLarge ? 'text-xl' : 'text-xs'} font-bold tracking-[0.15em] uppercase`} style={{ color: colors[0] }}>
+                {name}
+              </span>
+            </div>
+          );
+        }
+
+        if (layout === 'monogram') {
+          return (
+            <div className="flex flex-col items-center">
+              <div
+                className={`${isLarge ? 'w-24 h-24' : 'w-14 h-14'} rounded-full border-2 flex items-center justify-center`}
+                style={{ borderColor: colors[3] || colors[1], backgroundColor: colors[5] || '#fff' }}
+              >
+                <span className={`${fp?.scriptClass} ${isLarge ? 'text-4xl' : 'text-2xl'}`} style={{ color: colors[0] }}>
+                  {initials}
+                </span>
+              </div>
+              {isLarge && (
+                <div className={`${fp?.cleanClass} text-xs font-medium tracking-[0.3em] uppercase mt-2`} style={{ color: colors[0] }}>
+                  {name}
+                </div>
+              )}
+            </div>
+          );
+        }
+      };
+
+      return (
+        <div className="animate-in max-w-3xl mx-auto">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-1">Logo layouts</h2>
+          <p className="text-gray-500 mb-8">Choose your primary logo layout. You'll get all three variations in the final brand board.</p>
+
+          <div className="flex gap-3 mb-8">
+            {LOGO_LAYOUTS.map(layout => (
+              <button
+                key={layout}
+                onClick={() => selectLayout(layout)}
+                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all capitalize ${
+                  activeLayout === layout
+                    ? 'bg-pink-500 text-white shadow-md'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-pink-300'
+                }`}
+              >
+                {layout}
+              </button>
+            ))}
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-100 p-12 flex items-center justify-center min-h-[300px] mb-8 shadow-sm">
+            {fp && <LogoPreview layout={activeLayout} size="large" />}
+          </div>
+
+          {/* All three variations preview */}
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            {LOGO_LAYOUTS.map(layout => (
+              <div
+                key={layout}
+                className={`bg-white rounded-xl border p-6 flex items-center justify-center min-h-[120px] cursor-pointer transition-all ${
+                  activeLayout === layout ? 'border-pink-300 shadow-sm' : 'border-gray-100 hover:border-pink-200'
+                }`}
+                onClick={() => selectLayout(layout)}
+              >
+                {fp && <LogoPreview layout={layout} size="small" />}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-between">
+            <button onClick={onBack} className="px-6 py-3 text-gray-500 font-medium hover:text-gray-700 transition">← Back</button>
+            <button
+              onClick={() => { onChange({ ...data, logoLayout: activeLayout }); onNext(); }}
+              className="px-8 py-3 bg-gradient-to-r from-pink-500 to-pink-400 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+            >
+              View Brand Board →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 5: Brand Board
+    function BrandBoardStep({ data, onBack }) {
+      const boardRef = useRef(null);
+      const fp = data.fontPairing;
+      const colors = data.palette?.colors || ['#333', '#666', '#999', '#ccc', '#eee', '#fff'];
+      const name = data.businessName || 'Brand Name';
+      const tagline = data.tagline || '';
+      const words = name.trim().split(/\s+/);
+      const initials = words.map(w => w[0]).join('').substring(0, 2).toLowerCase();
+      const industry = INDUSTRIES.find(i => i.id === data.industry);
+
+      const handlePrint = () => window.print();
+
+      const handleCopyCSS = () => {
+        const css = `:root {
+  /* ${name} Brand Colors */
+  --color-primary: ${colors[0]};
+  --color-secondary: ${colors[1]};
+  --color-accent: ${colors[2]};
+  --color-highlight: ${colors[3]};
+  --color-light: ${colors[4]};
+  --color-background: ${colors[5]};
+
+  /* Fonts */
+  --font-script: '${fp?.script}', cursive;
+  --font-clean: '${fp?.clean}', sans-serif;
+}`;
+        navigator.clipboard.writeText(css);
+        alert('CSS variables copied to clipboard!');
+      };
+
+      return (
+        <div className="animate-in max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-800">Brand Board</h2>
+              <p className="text-gray-500">Here's the complete brand identity for {name}</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={handleCopyCSS} className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:border-pink-300 transition">
+                Copy CSS
+              </button>
+              <button onClick={handlePrint} className="px-4 py-2 bg-gradient-to-r from-pink-500 to-pink-400 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition">
+                Print / Save PDF
+              </button>
+            </div>
+          </div>
+
+          {/* The Brand Board */}
+          <div ref={boardRef} className="brand-board-export bg-white rounded-2xl shadow-lg overflow-hidden p-8" style={{ backgroundColor: colors[5] }}>
+
+            {/* Header */}
+            <div className="text-center mb-8 pb-6 border-b" style={{ borderColor: colors[4] }}>
+              <div className="mb-2">
+                {tagline && (
+                  <div className={`${fp?.scriptClass} text-3xl`} style={{ color: colors[1] }}>{tagline}</div>
+                )}
+                <div className={`${fp?.cleanClass} text-2xl font-bold tracking-[0.2em] uppercase`} style={{ color: colors[0] }}>
+                  {name}
+                </div>
+              </div>
+              <div className="text-xs text-gray-400 font-medium uppercase tracking-widest mt-2">Brand Board</div>
+            </div>
+
+            {/* Logo Variations */}
+            <div className="mb-8">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400 mb-4 text-center">Logo Variations</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {/* Stacked */}
+                <div className="border rounded-xl p-6 flex flex-col items-center justify-center min-h-[140px]" style={{ borderColor: colors[4] }}>
+                  {tagline && <div className={`${fp?.scriptClass} text-xl`} style={{ color: colors[1] }}>{tagline}</div>}
+                  <div className={`${fp?.cleanClass} text-sm font-bold tracking-[0.2em] uppercase`} style={{ color: colors[0] }}>{name}</div>
+                </div>
+                {/* Horizontal */}
+                <div className="border rounded-xl p-6 flex items-center justify-center min-h-[140px]" style={{ borderColor: colors[4] }}>
+                  <div className="text-center">
+                    <div className={`${fp?.cleanClass} text-sm font-bold tracking-[0.15em] uppercase`} style={{ color: colors[0] }}>{name}</div>
+                    {tagline && <div className={`${fp?.scriptClass} text-base`} style={{ color: colors[1] }}>{tagline}</div>}
+                  </div>
+                </div>
+                {/* Monogram */}
+                <div className="border rounded-xl p-6 flex flex-col items-center justify-center min-h-[140px]" style={{ borderColor: colors[4] }}>
+                  <div
+                    className="w-16 h-16 rounded-full border-2 flex items-center justify-center mb-2"
+                    style={{ borderColor: colors[3], backgroundColor: colors[5] }}
+                  >
+                    <span className={`${fp?.scriptClass} text-3xl`} style={{ color: colors[0] }}>{initials}</span>
+                  </div>
+                  <div className={`${fp?.cleanClass} text-[10px] font-medium tracking-[0.3em] uppercase`} style={{ color: colors[0] }}>{name}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Colors & Fonts */}
+            <div className="mb-8">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400 mb-4 text-center">Colors & Fonts</h3>
+              <div className="flex justify-center gap-4 mb-6">
+                {colors.map((c, i) => (
+                  <div key={i} className="flex flex-col items-center gap-2">
+                    <div className="w-14 h-14 rounded-full shadow-sm border border-gray-100" style={{ backgroundColor: c }} />
+                    <span className="text-[10px] font-mono text-gray-400 uppercase">{c}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="text-center space-y-2">
+                <div className={`${fp?.scriptClass} text-3xl`} style={{ color: colors[0] }}>
+                  {fp?.script} Font
+                </div>
+                <div className={`${fp?.cleanClass} text-sm font-semibold tracking-[0.15em] uppercase`} style={{ color: colors[1] }}>
+                  {fp?.clean} Font
+                </div>
+              </div>
+            </div>
+
+            {/* Accent Bar */}
+            <div className="h-2 rounded-full mb-6" style={{ background: `linear-gradient(to right, ${colors[0]}, ${colors[1]}, ${colors[2]}, ${colors[3]})` }} />
+
+            {/* Footer */}
+            <div className="text-center">
+              <div className="text-[10px] text-gray-300 uppercase tracking-widest">
+                Created with Daydream Brand Builder
+              </div>
+            </div>
+          </div>
+
+          {/* Details Panel */}
+          <div className="mt-8 grid grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Brand Details</h3>
+              <div className="space-y-2 text-sm">
+                <div><span className="text-gray-400">Name:</span> <span className="font-medium">{name}</span></div>
+                {tagline && <div><span className="text-gray-400">Tagline:</span> <span className="font-medium">{tagline}</span></div>}
+                <div><span className="text-gray-400">Industry:</span> <span className="font-medium">{industry?.label}</span></div>
+                <div><span className="text-gray-400">Vibe:</span> <span className="font-medium">{VIBES.find(v => v.id === data.vibe)?.label}</span></div>
+                <div><span className="text-gray-400">Palette:</span> <span className="font-medium">{data.palette?.name}</span></div>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Font & Color Specs</h3>
+              <div className="space-y-2 text-sm">
+                <div><span className="text-gray-400">Script Font:</span> <span className="font-medium">{fp?.script}</span></div>
+                <div><span className="text-gray-400">Clean Font:</span> <span className="font-medium">{fp?.clean}</span></div>
+                <div className="flex items-center gap-2 mt-3">
+                  {colors.map((c, i) => (
+                    <div key={i} className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-full border border-gray-200" style={{ backgroundColor: c }} />
+                      <span className="text-[10px] font-mono text-gray-400">{c}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 flex justify-between">
+            <button onClick={onBack} className="px-6 py-3 text-gray-500 font-medium hover:text-gray-700 transition">← Back to Logo</button>
+          </div>
+        </div>
+      );
+    }
+
+    // ==================== APP ====================
+
+    function App() {
+      const [step, setStep] = useState(0);
+      const [data, setData] = useState({});
+      const steps = ['Intake', 'Colors', 'Fonts', 'Logo', 'Board'];
+
+      return (
+        <div className="min-h-screen">
+          {/* Header */}
+          <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
+            <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-pink-300 flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">D</span>
+                </div>
+                <span className="font-semibold text-gray-800">Daydream Brand Builder</span>
+              </div>
+              {step > 0 && step < 4 && (
+                <button
+                  onClick={() => { setStep(0); setData({}); }}
+                  className="text-sm text-gray-400 hover:text-gray-600 transition"
+                >
+                  Start Over
+                </button>
+              )}
+            </div>
+          </header>
+
+          {/* Main */}
+          <main className="max-w-5xl mx-auto px-6 py-8">
+            <StepIndicator steps={steps} current={step} />
+
+            {step === 0 && (
+              <IntakeStep data={data} onChange={setData} onNext={() => setStep(1)} />
+            )}
+            {step === 1 && (
+              <PaletteStep data={data} onChange={setData} onNext={() => setStep(2)} onBack={() => setStep(0)} />
+            )}
+            {step === 2 && (
+              <FontStep data={data} onChange={setData} onNext={() => setStep(3)} onBack={() => setStep(1)} />
+            )}
+            {step === 3 && (
+              <LogoStep data={data} onChange={setData} onNext={() => setStep(4)} onBack={() => setStep(2)} />
+            )}
+            {step === 4 && (
+              <BrandBoardStep data={data} onBack={() => setStep(3)} />
+            )}
+          </main>
+
+          {/* Footer */}
+          <footer className="border-t border-gray-100 py-6 mt-12">
+            <div className="max-w-5xl mx-auto px-6 text-center text-xs text-gray-300">
+              Daydream Brand Builder - Built by Daydream Sites
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
